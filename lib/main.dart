@@ -1928,7 +1928,19 @@ class FormFactorScale extends StatelessWidget {
     if (PlatformDetector.isAppleTV()) {
       return _scaledSurface(child: child, scale: _appleTvScale, zeroInsets: true);
     }
-    if (!PlatformDetector.isAutomotive()) return child;
+    if (!PlatformDetector.isAutomotive()) {
+      // Desktop: honour the user's Display Scale (default 1.0, so nothing
+      // changes until it is set). A desktop driving a TV from across the room
+      // needs the larger UI that a TV platform would report on its own.
+      if (PlatformDetector.isDesktopOS()) {
+        return SettingValueBuilder<double>(
+          pref: SettingsService.automotiveUiScale,
+          builder: (context, scale, _) =>
+              scale == 1.0 ? child : _scaledSurface(child: child, scale: scale, zeroInsets: false),
+        );
+      }
+      return child;
+    }
 
     // Car system bars can sit on the left or right, are opaque, and may be
     // impossible to hide (OEM policy). Nothing is worth drawing under them,
