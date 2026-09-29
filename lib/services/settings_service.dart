@@ -239,7 +239,7 @@ class AutomotiveUiScale {
 }
 
 /// Uses a larger default on car displays while honoring and clamping a stored
-/// user adjustment on every platform.
+/// user adjustment on every platform. Applied on car displays and desktops.
 class _AutomotiveUiScalePref extends Pref<double> {
   const _AutomotiveUiScalePref() : super('automotive_ui_scale');
   @override

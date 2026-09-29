@@ -148,9 +148,16 @@ class _VideoState extends State<Video> {
     final renderBox = context.findRenderObject() as RenderBox?;
     if (renderBox == null || !renderBox.hasSize) return;
 
-    final position = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-    final dpr = MediaQuery.devicePixelRatioOf(context);
+    // The rect in the view's logical pixels, through any ancestor transform
+    // (FormFactorScale's Display Scale), times the view's own pixel ratio.
+    // Inside a scaled surface MediaQuery's devicePixelRatio is scaled too, but
+    // the native side turns the ratio into an integer buffer scale, so a
+    // Display Scale of 1.75 would otherwise draw the plane at half size.
+    final rect = MatrixUtils.transformRect(renderBox.getTransformTo(null), Offset.zero & renderBox.size);
+    final dpr = View.of(context).devicePixelRatio;
+    // Still depend on MediaQuery's ratio, as before, so a move to an output
+    // with another scale re-sends the rect.
+    MediaQuery.devicePixelRatioOf(context);
 
     // Rounded outward, the same way the native SetRect biases: it floors the
     // position and rounds the buffer size up so the plane always covers at
@@ -160,10 +167,10 @@ class _VideoState extends State<Video> {
     // seam, where the point of the plane is that the seam is black. Ceil and
     // floor are identity on an already-integral value, so an integral layout
     // sends exactly the numbers it sent before.
-    final left = (position.dx * dpr).floor();
-    final top = (position.dy * dpr).floor();
-    final right = ((position.dx + size.width) * dpr).ceil();
-    final bottom = ((position.dy + size.height) * dpr).ceil();
+    final left = (rect.left * dpr).floor();
+    final top = (rect.top * dpr).floor();
+    final right = (rect.right * dpr).ceil();
+    final bottom = (rect.bottom * dpr).ceil();
 
     // Keyed on the four integers actually sent rather than on a logical-pixel
     // tolerance. A sub-logical-pixel move is a real move at scale 2 or 3 -
