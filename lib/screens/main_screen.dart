@@ -521,6 +521,7 @@ class _MainScreenState extends State<MainScreen>
     _offlineUntilConnected = widget.isOfflineMode;
 
     WidgetsBinding.instance.addObserver(this);
+    HardwareKeyboard.instance.addHandler(_handleHomeKey);
     _contentFocusScope.addListener(_syncSidebarFocusWithContent);
 
     if (PlatformDetector.isDesktopOS()) {
@@ -1053,14 +1054,7 @@ class _MainScreenState extends State<MainScreen>
     receiver.onTabSearch = () => _selectTab(NavigationTabId.search);
     receiver.onTabDownloads = () => _selectTab(NavigationTabId.downloads);
     receiver.onTabSettings = () => _selectTab(NavigationTabId.settings);
-    receiver.onHome = () {
-      final tabs = _getVisibleTabs(_isOffline);
-      if (tabs.isEmpty) return;
-      _selectTab(tabs.first.id);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _sideNavKey.currentState?.focusHomeItem();
-      });
-    };
+    receiver.onHome = _goToHomeTab;
     receiver.onSearchAction = (query) {
       final trimmed = query?.trim() ?? '';
       final hasQuery = trimmed.isNotEmpty;
@@ -1086,8 +1080,33 @@ class _MainScreenState extends State<MainScreen>
     }
   }
 
+  /// Select the first visible tab (Home) and move the sidebar focus to it.
+  /// Shared by the companion remote's Home command and the Home key.
+  void _goToHomeTab() {
+    final tabs = _getVisibleTabs(_isOffline);
+    if (tabs.isEmpty) return;
+    _selectTab(tabs.first.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _sideNavKey.currentState?.focusHomeItem();
+    });
+  }
+
+  /// A Home key (`browserHome`: TV remotes, media keyboards) returns to the
+  /// Home tab from anywhere in the profile navigator: pushed pages and the
+  /// player are popped first. On Android TV and tvOS the system keeps Home, so
+  /// this only fires where the app receives it, such as desktop TV setups.
+  bool _handleHomeKey(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.browserHome) return false;
+    if (event is KeyDownEvent && mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      _goToHomeTab();
+    }
+    return true; // also swallow the repeat and release of the handled press
+  }
+
   @override
   void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleHomeKey);
     WidgetsBinding.instance.removeObserver(this);
     _profileRouteObserver?.unsubscribe(this);
     if (PlatformDetector.isDesktopOS()) {
