@@ -89,6 +89,7 @@ void main() {
       bool isLive = false,
       LiveSeekBy? onLiveSeekBy,
       String itemId = 'transient-feedback',
+      VoidCallback? onBack,
     }) async {
       transportCommands = [];
       await tester.pumpWidget(
@@ -114,6 +115,7 @@ void main() {
                   canNavigateMediaItems: false,
                   isLive: isLive,
                   onLiveSeekBy: onLiveSeekBy,
+                  onBack: onBack,
                   onPlayPauseRequested: wireTransportCallback
                       ? (command) async {
                           transportCommands.add(command);
@@ -673,6 +675,22 @@ void main() {
       expect(transportCommands, [TransportCommand.toggle]);
       expect(player.playOrPauseCalls, 1);
       expect(chrome.controlsVisible, isFalse, reason: 'pausing must not cover the subtitles either');
+
+      await settleFeedback(tester);
+    });
+
+    testWidgets('the Stop key leaves the player without toggling playback', (tester) async {
+      var backs = 0;
+      await pumpControls(tester, wireTransportCallback: true, onBack: () => backs++);
+
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.mediaStop);
+      await tester.sendKeyRepeatEvent(LogicalKeyboardKey.mediaStop);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.mediaStop);
+      await tester.pump();
+
+      expect(backs, 1, reason: 'one exit per press; repeat and release are consumed');
+      expect(transportCommands, isEmpty);
+      expect(player.playOrPauseCalls, 0);
 
       await settleFeedback(tester);
     });

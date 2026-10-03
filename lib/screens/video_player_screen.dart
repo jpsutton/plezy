@@ -2982,6 +2982,12 @@ class VideoPlayerScreenState extends State<VideoPlayerScreen>
           }
           return KeyEventResult.handled; // consume down, repeat, and up
         }
+        // The Stop key leaves the player (as the companion remote's Stop
+        // does), with the same ownership and gating as the transport keys.
+        if (videoPlayerNavigationPreference() && !PlatformDetector.isAppleTV() && isMediaStopKey(event.logicalKey)) {
+          if (event is KeyDownEvent) unawaited(_handleBackButton());
+          return KeyEventResult.handled; // consume down, repeat, and up
+        }
         // The skip keys need the same ownership, and unconditionally: no
         // global handler and no native bridge ever acts on them, so a gate
         // here would only decide which platform leaks. Reached whenever the
