@@ -24,6 +24,11 @@ TransportCommand? classifyTransportKey(LogicalKeyboardKey key, [PhysicalKeyboard
   return null;
 }
 
+/// Whether a key is the hardware Stop key. The video player has no "stopped
+/// but still on screen" state, so Stop leaves the player, as the companion
+/// remote's Stop command already does.
+bool isMediaStopKey(LogicalKeyboardKey key) => key == LogicalKeyboardKey.mediaStop;
+
 /// Which way a hardware seek or track key points.
 enum MediaSeekDirection { forward, backward }
 

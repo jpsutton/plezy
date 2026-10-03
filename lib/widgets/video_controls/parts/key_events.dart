@@ -193,6 +193,12 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
       return true; // Event handled, stop propagation
     }
 
+    // The Stop key leaves the player, like the companion remote's Stop.
+    if (event is KeyDownEvent && isMediaStopKey(event.logicalKey) && widget.onBack != null) {
+      widget.onBack!();
+      return true;
+    }
+
     // Fallback: handle all other shortcuts when focus has drifted away
     // (e.g. after controls auto-hide). The !hasFocus guard prevents
     // double-handling when the Focus onKeyEvent already processes the event.
@@ -284,6 +290,16 @@ extension _PlexVideoControlsKeyEventMethods on _PlexVideoControlsState {
     if (transportCommand != null) {
       if ((videoPlayerNavigationPreference() || isMobile) && event is KeyDownEvent) {
         unawaited(_playOrPause(command: transportCommand));
+      }
+      return KeyEventResult.handled;
+    }
+
+    // The Stop key leaves the player, like the companion remote's Stop. Same
+    // split as the transport keys: acted on here on TV/mobile, by the global
+    // handler on desktop, and consumed either way.
+    if (isMediaStopKey(key)) {
+      if ((videoPlayerNavigationPreference() || isMobile) && event is KeyDownEvent) {
+        widget.onBack?.call();
       }
       return KeyEventResult.handled;
     }
